@@ -17,7 +17,8 @@
 #from fastapi import FastAPI, Depends
 #from sqlalchemy.orm import Session
 '''Day 4'''
-from fastapi import FastAPI, Depends, HTTPException
+
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from app.database import engine, Base, get_db
@@ -62,8 +63,9 @@ def shorten(payload: schemas.URLCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(link)
     return link
-@app.get("/{short_code}")
-def redirect(short_code: str, db: Session = Depends(get_db)):
+
+@app.get("/stats/{short_code}", response_model=schemas.StatsResponse)
+def stats(short_code: str, db: Session = Depends(get_db)):
     link = (
         db.query(models.Link)
         .filter(models.Link.short_code == short_code)
@@ -71,4 +73,39 @@ def redirect(short_code: str, db: Session = Depends(get_db)):
     )
     if link is None:
         raise HTTPException(status_code=404, detail="Short link not found")
+
+    recent = (
+        db.query(models.Click)
+        .filter(models.Click.link_id == link.id)
+        .order_by(models.Click.clicked_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "short_code": link.short_code,
+        "original_url": link.original_url,
+        "click_count": link.click_count,
+        "created_at": link.created_at,
+        "recent_clicks": recent,
+    }
+
+@app.get("/{short_code}")
+def redirect(short_code: str, request: Request, db: Session = Depends(get_db)):
+    link = (
+        db.query(models.Link)
+        .filter(models.Link.short_code == short_code)
+        .first()
+    )
+    if link is None:
+        raise HTTPException(status_code=404, detail="Short link not found")
+    click = models.Click(
+        link_id=link.id,
+        user_agent=request.headers.get("user-agent"),
+        referrer=request.headers.get("referer"),
+    )
+    db.add(click)
+    link.click_count += 1
+    db.commit()
+
     return RedirectResponse(url=link.original_url)
