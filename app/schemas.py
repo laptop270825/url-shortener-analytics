@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict,HttpUrl
 
 class URLCreate(BaseModel):
-    url: str
+    url: HttpUrl
 
 class URLResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
