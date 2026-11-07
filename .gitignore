@@ -218,4 +218,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-shortener.db
+shortener.db*
+bench.db*

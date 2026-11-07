@@ -23,7 +23,7 @@ agents = [
 ]
 referrers = [None, "https://twitter.com/", "https://www.linkedin.com/", "https://t.me/"]
 
-now = datetime.datetime.utcnow()
+now = datetime.utcnow()
 for url in sites:
     link = db.query(models.Link).filter(models.Link.original_url == url).first()
     if link is None:

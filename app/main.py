@@ -111,7 +111,7 @@ def stats(short_code: str, db: Session = Depends(get_db)):
         "recent_clicks": recent,
     }
 
-@app.get("/api/analytics")
+'''@app.get("/api/analytics")
 def analytics(db: Session = Depends(get_db)):
     clicks = db.query(models.Click).all()
     per_day = Counter(c.clicked_at.date().isoformat() for c in clicks)
@@ -126,6 +126,43 @@ def analytics(db: Session = Depends(get_db)):
         "total_links": db.query(func.count(models.Link.id)).scalar(),
         "total_clicks": len(clicks),
         "clicks_per_day": dict(sorted(per_day.items())),
+        "devices": dict(devices),
+        "top_links": [
+            {"short_code": l.short_code, "url": l.original_url, "clicks": l.click_count}
+            for l in top_links
+        ],
+    }'''
+
+@app.get("/api/analytics")
+def analytics(db: Session = Depends(get_db)):
+    day = func.date(models.Click.clicked_at)
+    per_day_rows = (
+        db.query(day, func.count(models.Click.id))
+        .group_by(day)
+        .order_by(day)
+        .all()
+    )
+
+    ua_rows = (
+        db.query(models.Click.user_agent, func.count(models.Click.id))
+        .group_by(models.Click.user_agent)
+        .all()
+    )
+    devices = Counter()
+    for user_agent, n in ua_rows:
+        devices[detect_device(user_agent)] += n
+
+    top_links = (
+        db.query(models.Link)
+        .order_by(models.Link.click_count.desc())
+        .limit(5)
+        .all()
+    )
+
+    return {
+        "total_links": db.query(func.count(models.Link.id)).scalar(),
+        "total_clicks": db.query(func.count(models.Click.id)).scalar(),
+        "clicks_per_day": {str(d): n for d, n in per_day_rows},
         "devices": dict(devices),
         "top_links": [
             {"short_code": l.short_code, "url": l.original_url, "clicks": l.click_count}
@@ -152,8 +189,14 @@ def redirect(short_code: str, request: Request, db: Session = Depends(get_db)):
         user_agent=request.headers.get("user-agent"),
         referrer=request.headers.get("referer"),
     )
-    db.add(click)
+    '''db.add(click)
     link.click_count += 1
+    db.commit()'''
+    target = link.original_url
+    db.add(click)
+    db.query(models.Link).filter(models.Link.id == link.id).update(
+        {models.Link.click_count: models.Link.click_count + 1}
+    )
     db.commit()
 
-    return RedirectResponse(url=link.original_url)
+    return RedirectResponse(url=target)
