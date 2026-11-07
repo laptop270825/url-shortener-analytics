@@ -108,6 +108,7 @@ erDiagram
         string user_agent
         string referrer
     }
+    }
 ```
 
 ## API reference
@@ -168,7 +169,7 @@ GET /api/analytics
 
 Windows (PowerShell):
 ```powershell
-git clone https://github.com/<laptop270825>/url-shortener-analytics.git
+git clone https://github.com/laptop270825/url-shortener-analytics.git
 cd url-shortener-analytics
 python -m venv venv
 venv\Scripts\activate
@@ -178,7 +179,7 @@ uvicorn app.main:app --reload
 
 macOS / Linux:
 ```bash
-git clone https://github.com/<laptop270825>/url-shortener-analytics.git
+git clone https://github.com/laptop270825/url-shortener-analytics.git
 cd url-shortener-analytics
 python -m venv venv
 source venv/bin/activate
