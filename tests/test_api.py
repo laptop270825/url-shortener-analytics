@@ -1,3 +1,5 @@
+from app.main import limiter
+
 GOOGLE = {"url": "https://www.google.com"}
 
 
@@ -44,3 +46,14 @@ def test_stats_counts_clicks(client):
     stats = client.get(f"/stats/{code}").json()
     assert stats["click_count"] == 3
     assert len(stats["recent_clicks"]) == 3
+
+def test_rate_limit_blocks_after_10_requests(client):
+    limiter.enabled = True
+    limiter.reset()
+    statuses = []
+    for i in range(11):
+        r = client.post("/shorten", json={"url": f"https://example.com/{i}"})
+        statuses.append(r.status_code)
+    assert statuses[:10] == [200] * 10
+    assert statuses[10] == 429
+    

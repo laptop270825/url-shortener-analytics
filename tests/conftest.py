@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
+from app.main import app, limiter
 from app.database import Base, get_db
 
 engine = create_engine(
@@ -17,6 +17,8 @@ TestingSession = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 @pytest.fixture()
 def client():
+    limiter.enabled = False  # Disable rate limiting for tests
+    limiter.reset()  # Reset the limiter state before each test
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 

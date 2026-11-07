@@ -21,13 +21,25 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
+from sqlalchemy.orm import Session
+
 from app.database import engine, Base, get_db
 from app import models, schemas
 from app.utils import encode_base62
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 Base.metadata.create_all(bind=engine)
 
+#app = FastAPI(title="URL Shortener")
+
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="URL Shortener")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.get("/")
@@ -44,8 +56,11 @@ def shorten(payload: schemas.URLCreate, db: Session = Depends(get_db)):
     db.commit()  # commits the transaction
     db.refresh(link) # refreshes the instance with the latest data from the database
     return link'''
+#@app.post("/shorten", response_model=schemas.URLResponse)
+#def shorten(payload: schemas.URLCreate, db: Session = Depends(get_db)):
 @app.post("/shorten", response_model=schemas.URLResponse)
-def shorten(payload: schemas.URLCreate, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def shorten(request: Request, payload: schemas.URLCreate, db: Session = Depends(get_db)):
     url = str(payload.url)
 
     existing = (
