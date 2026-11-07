@@ -19,17 +19,23 @@
 '''Day 4'''
 
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+#from fastapi.responses import RedirectResponse
 
 from sqlalchemy.orm import Session
 
 from app.database import engine, Base, get_db
 from app import models, schemas
-from app.utils import encode_base62
+from app.utils import encode_base62, detect_device
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+
+from collections import Counter
+from pathlib import Path
+
+from fastapi.responses import RedirectResponse, HTMLResponse
+from sqlalchemy import func
 
 Base.metadata.create_all(bind=engine)
 
@@ -104,6 +110,33 @@ def stats(short_code: str, db: Session = Depends(get_db)):
         "created_at": link.created_at,
         "recent_clicks": recent,
     }
+
+@app.get("/api/analytics")
+def analytics(db: Session = Depends(get_db)):
+    clicks = db.query(models.Click).all()
+    per_day = Counter(c.clicked_at.date().isoformat() for c in clicks)
+    devices = Counter(detect_device(c.user_agent) for c in clicks)
+    top_links = (
+        db.query(models.Link)
+        .order_by(models.Link.click_count.desc())
+        .limit(5)
+        .all()
+    )
+    return {
+        "total_links": db.query(func.count(models.Link.id)).scalar(),
+        "total_clicks": len(clicks),
+        "clicks_per_day": dict(sorted(per_day.items())),
+        "devices": dict(devices),
+        "top_links": [
+            {"short_code": l.short_code, "url": l.original_url, "clicks": l.click_count}
+            for l in top_links
+        ],
+    }
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    page = Path(__file__).parent / "static" / "dashboard.html"
+    return page.read_text(encoding="utf-8")
 
 @app.get("/{short_code}")
 def redirect(short_code: str, request: Request, db: Session = Depends(get_db)):

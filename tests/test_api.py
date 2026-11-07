@@ -1,4 +1,5 @@
 from app.main import limiter
+from app.utils import detect_device
 
 GOOGLE = {"url": "https://www.google.com"}
 
@@ -56,4 +57,19 @@ def test_rate_limit_blocks_after_10_requests(client):
         statuses.append(r.status_code)
     assert statuses[:10] == [200] * 10
     assert statuses[10] == 429
-    
+
+def test_detect_device():
+    assert detect_device("Mozilla/5.0 (iPhone) Mobile Safari") == "Mobile"
+    assert detect_device("Mozilla/5.0 (iPad) Safari") == "Tablet"
+    assert detect_device("Mozilla/5.0 (Windows NT 10.0) Chrome") == "Desktop"
+    assert detect_device(None) == "Unknown"
+
+
+def test_analytics_summary(client):
+    code = client.post("/shorten", json=GOOGLE).json()["short_code"]
+    client.get(f"/{code}", follow_redirects=False)
+    client.get(f"/{code}", follow_redirects=False)
+    data = client.get("/api/analytics").json()
+    assert data["total_links"] == 1
+    assert data["total_clicks"] == 2
+    assert data["top_links"][0]["clicks"] == 2

@@ -8,3 +8,13 @@ def encode_base62(num: int) -> str:
         num, remainder = divmod(num, 62)
         result.append(ALPHABET[remainder])
     return "".join(reversed(result))
+
+def detect_device(user_agent: str | None) -> str:
+    ua = (user_agent or "").lower()
+    if not ua:
+        return "Unknown"
+    if "ipad" in ua or "tablet" in ua:
+        return "Tablet"
+    if "mobile" in ua or "android" in ua or "iphone" in ua:
+        return "Mobile"
+    return "Desktop"

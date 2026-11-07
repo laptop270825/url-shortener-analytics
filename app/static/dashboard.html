@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>URL Shortener Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 24px; }
+    h1 { margin-top: 0; }
+    .cards { display: flex; gap: 16px; margin-bottom: 24px; }
+    .card { background: #fff; padding: 16px 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .card b { display: block; font-size: 28px; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .panel { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { text-align: left; padding: 6px; border-bottom: 1px solid #eee; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>URL Shortener Analytics</h1>
+  <div class="cards">
+    <div class="card">Total links<b id="links">-</b></div>
+    <div class="card">Total clicks<b id="clicks">-</b></div>
+  </div>
+  <div class="grid">
+    <div class="panel"><h3>Clicks per day</h3><canvas id="dayChart"></canvas></div>
+    <div class="panel"><h3>Devices</h3><canvas id="deviceChart"></canvas></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Top links</h3>
+    <table id="topTable"><tr><th>Code</th><th>URL</th><th>Clicks</th></tr></table>
+  </div>
+
+  <script>
+    fetch("/api/analytics")
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById("links").textContent = d.total_links;
+        document.getElementById("clicks").textContent = d.total_clicks;
+
+        new Chart(document.getElementById("dayChart"), {
+          type: "line",
+          data: {
+            labels: Object.keys(d.clicks_per_day),
+            datasets: [{ label: "Clicks", data: Object.values(d.clicks_per_day), tension: 0.3 }]
+          }
+        });
+
+        new Chart(document.getElementById("deviceChart"), {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(d.devices),
+            datasets: [{ data: Object.values(d.devices) }]
+          }
+        });
+
+        const table = document.getElementById("topTable");
+        d.top_links.forEach(l => {
+          const row = table.insertRow();
+          row.insertCell().textContent = l.short_code;
+          row.insertCell().textContent = l.url;
+          row.insertCell().textContent = l.clicks;
+        });
+      });
+  </script>
+</body>
+</html>
