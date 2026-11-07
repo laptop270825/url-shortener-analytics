@@ -93,7 +93,7 @@ sequenceDiagram
 
 ```mermaid
 erDiagram
-    LINKS ||--os{ CLICKS : "has many"
+    LINKS ||--o{ CLICKS : "has many"
     LINKS {
         int id PK
         string original_url
@@ -107,7 +107,6 @@ erDiagram
         datetime clicked_at
         string user_agent
         string referrer
-    }
     }
 ```
 
