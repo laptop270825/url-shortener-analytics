@@ -37,6 +37,11 @@ from pathlib import Path
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy import func
 
+from fastapi.responses import FileResponse
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 Base.metadata.create_all(bind=engine)
 
 #app = FastAPI(title="URL Shortener")
@@ -50,7 +55,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/")
 def home():
-    return {"message": "URL shortener is running"}
+    return FileResponse(os.path.join(BASE_DIR, "static", "index.html"))
 
 
 '''@app.post("/shorten", response_model=schemas.URLResponse)

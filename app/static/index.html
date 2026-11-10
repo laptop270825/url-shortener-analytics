@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>URL Shortener</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 560px; margin: 80px auto; padding: 0 16px; text-align: center; }
+    input { width: 70%; padding: 10px; font-size: 16px; }
+    button { padding: 10px 16px; font-size: 16px; cursor: pointer; }
+    #result { margin-top: 24px; font-size: 18px; }
+    #error { color: #c0392b; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🔗 URL Shortener</h1>
+  <p>Paste a long link, get a short one, and track every click.</p>
+  <input id="url" type="url" placeholder="https://example.com/very/long/link">
+  <button onclick="shorten()">Shorten</button>
+  <div id="error"></div>
+  <div id="result"></div>
+  <p><a href="/dashboard">View analytics dashboard →</a></p>
+
+  <script>
+    async function shorten() {
+      const url = document.getElementById("url").value;
+      const err = document.getElementById("error");
+      const res = document.getElementById("result");
+      err.textContent = ""; res.innerHTML = "";
+      try {
+        const r = await fetch("/shorten", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url })
+        });
+        if (!r.ok) throw new Error("Invalid URL or too many requests");
+        const data = await r.json();
+        const short = "https://url-shortener-analytics-mtq5.onrender.com/" + data.short_code;
+        res.innerHTML = `<a href="${short}" target="_blank">${short}</a>
+          <button onclick="navigator.clipboard.writeText('${short}')">Copy</button>`;
+      } catch (e) { err.textContent = e.message; }
+    }
+  </script>
+</body>
+</html>
