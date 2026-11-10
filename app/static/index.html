@@ -35,7 +35,7 @@
         });
         if (!r.ok) throw new Error("Invalid URL or too many requests");
         const data = await r.json();
-        const short = "https://url-shortener-analytics-mtq5.onrender.com/" + data.short_code;
+        const short = window.location.origin + "/" + data.short_code;
         res.innerHTML = `<a href="${short}" target="_blank">${short}</a>
           <button onclick="navigator.clipboard.writeText('${short}')">Copy</button>`;
       } catch (e) { err.textContent = e.message; }
